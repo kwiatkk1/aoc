@@ -78,7 +78,7 @@ const BOARD_WIDTH = 7;
 class Game {
   rocksCount: number = 0;
   towerHeight: number = 0;
-  hiddenHeight: number = 0;
+  trimmedHeight: number = 0;
   board: boolean[][] = [];
   activeRock: MovingRock | null = null;
   hash: string = this.getHash();
@@ -90,7 +90,7 @@ class Game {
   }
 
   get totalTowerHeight() {
-    return this.towerHeight + this.hiddenHeight;
+    return this.towerHeight + this.trimmedHeight;
   }
 
   tick() {
@@ -153,18 +153,17 @@ class Game {
       this.towerHeight = this.board.length;
     }
 
-    const lastRowNonEmpty = Math.max(
+    const lastSignificantRow = Math.max(
       ...this.board[0].map((_, i) => {
-        const index = this.board.findIndex((row) => row[i]);
-        return index === -1 ? i + 1 : index;
+        return this.board.findIndex((row) => row[i]);
       })
-    );
+    ) + 5;
 
-    if (lastRowNonEmpty) {
+    if (lastSignificantRow < this.board.length) {
       const height = this.board.length;
-      this.board = this.board.slice(0, lastRowNonEmpty + 1);
+      this.board = this.board.slice(0, lastSignificantRow + 1);
       this.towerHeight = this.board.length;
-      this.hiddenHeight = this.hiddenHeight + (height - this.towerHeight);
+      this.trimmedHeight = this.trimmedHeight + (height - this.board.length);
     }
 
     this.hash = this.getHash();
@@ -219,7 +218,11 @@ function solve(input: string, maxRocksCount: number) {
   const rockStream = new RockStream(parseRocks(rocksInput));
   const game = new Game(rockStream, windStream);
 
-  const hashes: Array<{ hash: string; rocksCount: number; totalHeight: number }> = [];
+  const hashes: Array<{
+    hash: string;
+    rocksCount: number;
+    totalHeight: number;
+  }> = [];
   let currentCount = 0;
 
   while (true) {
@@ -260,15 +263,19 @@ function solve(input: string, maxRocksCount: number) {
   const cycleHeightTotal = cyclesCount * cycleHeight;
 
   // base
-  const base = hashes.find(({ rocksCount}) => rocksCount === startAt.rocksCount - 1)!;
+  const base = hashes.find(
+    ({ rocksCount }) => rocksCount === startAt.rocksCount - 1
+  )!;
   const baseHeight = base.totalHeight;
 
   // extra
-  const extraCount = maxRocksCount - base.rocksCount - cyclesCount * cycleLength;
+  const extraCount =
+    maxRocksCount - base.rocksCount - cyclesCount * cycleLength;
   const extraHeight = !extraCount
     ? 0
-    : hashes.find(({ rocksCount}) => rocksCount === base.rocksCount + extraCount)!.totalHeight -
-      base.totalHeight;
+    : hashes.find(
+        ({ rocksCount }) => rocksCount === base.rocksCount + extraCount
+      )!.totalHeight - base.totalHeight;
 
   console.log(
     JSON.stringify({
@@ -285,12 +292,32 @@ function solve(input: string, maxRocksCount: number) {
     })
   );
 
+  const r = maxRocksCount - cyclesCount * cycleLength;
+  return (
+    cycleHeightTotal +
+    hashes.find(({ rocksCount }) => rocksCount === r)!.totalHeight
+  );
+  // return
+
   return baseHeight + cycleHeightTotal + extraHeight;
   // return cycleHeightTotal + hashes[startIndex + extraCount - 1].height;
 }
 
 export function solvePart1(input: string): number {
-  return solve(input, 2022);
+  // return solve(input, 2022);
+  const windStream = new WindStream(input);
+  const rockStream = new RockStream(parseRocks(rocksInput));
+  const game = new Game(rockStream, windStream);
+
+  while (true) {
+    game.tick();
+
+    if (game.rocksCount === 2022) {
+      game.print();
+      console.log(game.towerHeight, game.trimmedHeight);
+      return game.totalTowerHeight;
+    }
+  }
 }
 
 export function solvePart2(input: string): number {
