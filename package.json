@@ -1,9 +1,13 @@
 {
   "name": "aoc22",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "@types/lodash": "^4.14.191",
     "@types/node": "^18.11.11",
+    "chalk": "^4.1.2",
     "lodash": "^4.17.21",
     "prettier": "^2.8.0",
     "ts-node": "^10.9.1",

@@ -1,10 +1,3 @@
-// #.######
-// #>>.<^<#
-// #.<..<<#
-// #>v.><>#
-// #<^v^^>#
-// ######.#
-
 import { uniqBy } from "lodash";
 
 class Blizzard {
@@ -192,8 +185,8 @@ export function solvePart2(input: string): number {
     }
   }
 
-  console.log("1st trip complete in", round);
-  console.log("going back...");
+  // console.log("1st trip complete in", round);
+  // console.log("going back...");
 
   // print(blizzards, rowsCount, colsCount, round);
 
@@ -238,8 +231,8 @@ export function solvePart2(input: string): number {
     }
   }
 
-  console.log("2nd trip complete in", round);
-  console.log("going back...");
+  // console.log("2nd trip complete in", round);
+  // console.log("going back...");
 
   // go forward again
   places = [{ x: 0, y: -1 }];
