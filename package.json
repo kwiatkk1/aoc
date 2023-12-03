@@ -6,7 +6,7 @@
   },
   "scripts": {
     "start": "ts-node aoc",
-    "prepare": "ts-node prepare-next-day"
+    "next": "ts-node prepare-next-day"
   },
   "dependencies": {
     "@types/lodash": "^4.14.191",
