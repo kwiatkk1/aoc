@@ -36,7 +36,7 @@ class Monkey {
     return new Monkey(name, items, operation, test, trueBranch, falseBranch);
   }
 
-  processItem(value: number): { item: number; toMonkey: number } {
+  processItem(value: number, nwd: number): { item: number; toMonkey: number } {
     this.inspectsCount += 1;
     const [operator, operandText] = this.operation;
     const operand = operandText === "old" ? value : parseInt(operandText);
@@ -49,7 +49,9 @@ class Monkey {
     }
 
     // 2. bored factor
-    value = Math.floor(value / 3);
+    // value = Math.floor(value / 3);
+    // 2. bored factor
+    value = value % nwd;
 
     // 3. test
     if (value % this.test === 0) {
@@ -59,8 +61,9 @@ class Monkey {
   }
 
   makeTurn(monkeys: Monkey[]) {
+    const nwd = monkeys.reduce((acc, m) => acc * m.test, 1);
     [...this.items].forEach((value) => {
-      const { toMonkey, item } = this.processItem(value);
+      const { toMonkey, item } = this.processItem(value, nwd);
       const target = monkeys.find(({ name }) => name === toMonkey);
       if (target) target.items.push(item);
     });
@@ -76,21 +79,15 @@ function round(monkeys: Monkey[]) {
   monkeys.forEach((monkey) => monkey.makeTurn(monkeys));
 }
 
-export function solvePart1(input: string): number {
+export function solvePart2(input: string): number {
   const monkeys = parse(input);
 
-  for (let i = 0; i < 20; i++) {
-    //console.log("round", i);
+  for (let i = 0; i < 10000; i++) {
     round(monkeys);
-    //console.log(monkeys.map(m => `${m.name}: ${m.items.join(", ")}`).join('\n'));
   }
-
-  // console.log(monkeys.map(m => `${m.name}: ${m.inspectsCount}`).join('\n'));
 
   const [a, b] = monkeys.map((m) => m.inspectsCount).sort((a, b) => b - a);
   const monkeyBusiness = a * b;
 
   return monkeyBusiness;
 }
-
-export { solvePart2 } from './solver2';

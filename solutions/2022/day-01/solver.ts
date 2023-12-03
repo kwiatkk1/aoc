@@ -1,4 +1,4 @@
-export function solvePart1(input: string): string {
+export function solvePart1(input: string): number {
   return input
     .split("\n\n")
     .map((input) =>
@@ -9,10 +9,10 @@ export function solvePart1(input: string): string {
     )
     .map((it, i) => ({ i, it }))
     .sort((a, b) => b.it - a.it)[0]
-    .it.toString();
+    .it;
 }
 
-export function solvePart2(input: string): string {
+export function solvePart2(input: string): number {
   return input
     .split("\n\n")
     .map((input) =>
@@ -24,6 +24,5 @@ export function solvePart2(input: string): string {
     .map((it, i) => ({ i, it }))
     .sort((a, b) => b.it - a.it)
     .slice(0, 3)
-    .reduce((sum, { it }) => sum + it, 0)
-    .toString();
+    .reduce((sum, { it }) => sum + it, 0);
 }

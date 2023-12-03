@@ -17,7 +17,7 @@ function getStack(stacksInput: string): string[][] {
     const stacksCount = (lines[rowsCount].length + 1) / 4;
     const linesParsed = Array(stacksCount).fill(0).map(() => [] as string[]);
 
-    console.log({ lines, rowsCount, stacksCount, linesParsed });
+    // console.log({ lines, rowsCount, stacksCount, linesParsed });
 
     for (let i = 0; i < rowsCount; i++) {
         let row = parseRow(linesRev[i+1], stacksCount);

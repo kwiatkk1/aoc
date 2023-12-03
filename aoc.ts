@@ -1,7 +1,7 @@
 import { parseArgs } from "node:util";
 import assert from "node:assert";
 import chalk from "chalk";
-import { readdirSync, readFileSync, existsSync } from "fs";
+import { readdirSync, readFileSync, existsSync, writeFileSync } from "fs";
 
 const { values: args } = parseArgs({
   options: {
@@ -9,6 +9,7 @@ const { values: args } = parseArgs({
     day: { type: "string" },
     part: { type: "string", multiple: true, default: ["1", "2"] },
     test: { type: "boolean" },
+    save: { type: "boolean" },
   },
 });
 
@@ -16,6 +17,7 @@ const year = args.year || getLastYear() || "";
 const day = (args.day || getLastDay() || "").padStart(2, "0");
 const parts = Array.isArray(args.part) ? args.part : ["1", "2"];
 const testsOnly = !!args.test;
+const saveOutput = !!args.save;
 const solutionPath = `solutions/${year}/day-${day}`;
 
 assert(existsSync(solutionPath), `no solutions for ${year}/${day}`);
@@ -33,7 +35,7 @@ function getLastYear() {
 
 async function run(year: string, day: string, path: string) {
   const solverCode = await import(`./${path}/solver.ts`);
-  const expectedOutputs = await import(`./${path}/output.json`);
+  const expectedOutputs = await import(`./${path}/output.json`).catch(() => {});
   const files = readdirSync(path);
 
   const testFiles = files.filter(
@@ -43,6 +45,7 @@ async function run(year: string, day: string, path: string) {
     (it) => it.startsWith("input-real") && it.endsWith(".txt")
   );
   const filesToRun = testsOnly ? testFiles : [...testFiles, ...realFiles];
+  const results: any = {};
 
   for (let part of parts) {
     let fileNumber = 0;
@@ -54,9 +57,10 @@ async function run(year: string, day: string, path: string) {
       const name = file.slice("input-".length, -1 * ".txt".length);
       const inputPath = `./${path}/${file}`;
       const input = readFileSync(inputPath, "utf-8");
-      const expected = expectedOutputs?.[name]?.[`part${part}`]
-        ? `${expectedOutputs?.[name]?.[`part${part}`]}`
-        : null;
+      const expected =
+        typeof expectedOutputs?.[name]?.[`part${part}`] !== "undefined"
+          ? `${expectedOutputs?.[name]?.[`part${part}`]}`
+          : null;
 
       console.log(
         chalk.grey("aoc"),
@@ -101,6 +105,17 @@ async function run(year: string, day: string, path: string) {
       } else {
         console.log(chalk.grey("    result:"), resultText);
       }
+
+      results[name] = results[name] || {};
+      results[name][`part${part}`] = result;
     }
+  }
+
+  if (saveOutput) {
+    writeFileSync(
+      `./${path}/output.json`,
+      JSON.stringify(results, null, 2),
+      "utf8"
+    );
   }
 }

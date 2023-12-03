@@ -22,6 +22,12 @@ class Sensor {
   isInRange(checkedPosition: Coords) {
     return length(this.position, checkedPosition) <= this.radius;
   }
+
+  nextToCheckInRow(checkedPosition: Coords) {
+    return (
+      checkedPosition.x + (this.radius - length(this.position, checkedPosition))
+    );
+  }
 }
 
 function parse(input: string) {
@@ -56,33 +62,29 @@ function parse(input: string) {
   };
 }
 
-export function solvePart1(input: string): number {
+export function solvePart2(input: string): number {
   const { data, constraints } = parse(input);
-  const row = constraints.part1.row;
+  const max = constraints.part2.max;
   const model = data.map((it) => new Sensor(it.sensor, it.beacon));
+  let found: Coords | null = null;
 
-  const minX = Math.min(...model.map((it) => it.maxLeft.x));
-  const maxX = Math.max(...model.map((it) => it.maxRight.x));
+  outer: for (let y = 0; y <= max; y++) {
+    const possibleY = model.filter(
+      (it) => it.maxTop.y <= y && it.maxBottom.y >= y
+    );
+    inner: for (let x = 0; x <= max; x++) {
+      //const possibleX = possibleY.filter(it => it.maxLeft.x <= x && it.maxRight.x >= x);
 
-  // console.log({ minX, maxX });
-
-  const occupied: Coords[] = [];
-  for (let x = minX; x <= maxX; x++) {
-    if (model.some((s) => s.isInRange({ x, y: row }))) {
-      occupied.push({ x, y: row });
+      for (let sensor of possibleY) {
+        if (sensor.isInRange({ x, y })) {
+          x = sensor.nextToCheckInRow({ x, y });
+          continue inner;
+        }
+      }
+      found = { x, y };
     }
   }
-  const occupiedMinusBeacons = occupied.filter(
-    (it) =>
-      !model.some((sensor) => {
-        return (
-          (it.x === sensor.position.x && it.y === sensor.position.y) ||
-          (it.x === sensor.beacon.x && it.y === sensor.beacon.y)
-        );
-      })
-  );
 
-  return occupiedMinusBeacons.length;
+  if (found) return found.x * 4000000 + found.y;
+  return -1;
 }
-
-export { solvePart2 } from "./solver2";

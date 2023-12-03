@@ -1,4 +1,10 @@
 {
-  "test": { "part1": 18, "part2": 54 },
-  "real": { "part1": 274, "part2": 839 }
+  "test": {
+    "part1": 18,
+    "part2": 54
+  },
+  "real": {
+    "part1": 274,
+    "part2": 839
+  }
 }

@@ -30,3 +30,5 @@ Sensor at x=2385258, y=2774943: closest beacon is at x=2386559, y=2090397
 Sensor at x=3337656, y=2916144: closest beacon is at x=3580400, y=3200980
 Sensor at x=380595, y=66906: closest beacon is at x=152363, y=369618
 Sensor at x=1593628, y=3408455: closest beacon is at x=2260632, y=3415930
+
+{"part1": { "row": 2000000 }, "part2": { "max": 4000000 }}

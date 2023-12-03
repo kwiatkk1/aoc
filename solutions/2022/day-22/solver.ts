@@ -1,3 +1,5 @@
+import { solvePart2Real, solvePart2Test } from "./solver2";
+
 class Cmd {
   constructor(public text: string, public value: number = 0) {}
 
@@ -100,21 +102,21 @@ class Game {
 }
 
 function print(nodes: Node[]) {
-    const maxRow = Math.max(...nodes.map(n => n.row));
-    const maxCol = Math.max(...nodes.map(n => n.col));
-    let print = '';
+  const maxRow = Math.max(...nodes.map((n) => n.row));
+  const maxCol = Math.max(...nodes.map((n) => n.col));
+  let print = "";
 
-    for (let r = 1; r <= maxRow; r++) {
-        for (let c = 1; c <= maxCol; c++) {
-            const node = nodes.find(n => n.row === r && n.col === c);
-            if (!node) print += ' ';
-            else if (node.isWall) print += '#';
-            else print += '.';
-        }
-        print += '\n';
+  for (let r = 1; r <= maxRow; r++) {
+    for (let c = 1; c <= maxCol; c++) {
+      const node = nodes.find((n) => n.row === r && n.col === c);
+      if (!node) print += " ";
+      else if (node.isWall) print += "#";
+      else print += ".";
     }
+    print += "\n";
+  }
 
-    return print;
+  return print;
 }
 
 function parse(input: string): { nodes: Node[]; commands: Cmd[] } {
@@ -151,7 +153,7 @@ export function solvePart1(input: string): number {
 
   // console.log(print(nodes))
 
-    // console.log(game.currentNode);
+  // console.log(game.currentNode);
 
   game.run(commands);
 
@@ -162,5 +164,7 @@ export function solvePart1(input: string): number {
 
 export function solvePart2(input: string): number {
   const model = parse(input);
-  return -1;
+  return model.nodes.length < 100
+    ? solvePart2Test(input)
+    : solvePart2Real(input);
 }

@@ -64,17 +64,22 @@ class Game {
     //   maxRow,
     //   lines,
     // });
-    this.minCol = minCol;
-    this.maxCol = maxCol;
+    const minColExtended = 500 - (maxRow + 3);
+    const maxColExtended = 500 + (maxRow + 3);
+
+    this.minCol = minColExtended;
+    this.maxCol = maxColExtended;
     this.maxRow = maxRow;
     this.lines = lines;
     this.sand = null;
     this.exit = false;
 
-    const columns = maxCol - minCol;
-    this.board = new Array(maxRow + 1)
+    const columns = maxColExtended - minColExtended;
+    this.board = new Array(maxRow + 1 + 2)
       .fill([])
-      .map((_, index) => new Array(columns + 1).fill("."));
+      .map((_, index, arr) =>
+        new Array(columns).fill(index === arr.length - 1 ? "#" : ".")
+      );
 
     this.putRocks();
   }
@@ -105,7 +110,7 @@ class Game {
     );
 
     return boardWithSand
-      .map((row, y) => `${y.toString().padStart(3)} ${row.join("")}`)
+      .map((row, y) => `${"" && y.toString().padStart(3)}${row.join("")}`)
       .join("\n");
   }
 
@@ -153,6 +158,9 @@ class Game {
       this.sand = { row: 0, col: 500 - this.minCol };
     } else {
       if (!this.moveSand()) {
+        if (this.sand.row === 0 && this.sand.col === 500 - this.minCol) {
+          this.exit = true;
+        }
         this.board[this.sand.row][this.sand.col] = "o";
         this.sand = null;
       }
@@ -160,7 +168,7 @@ class Game {
   }
 }
 
-export function solvePart1(input: string): number {
+export function solvePart2(input: string): number {
   const lines = parse(input);
   const minCol = Math.min(...lines.map((it) => ("col" in it ? it.col : it.x)));
   const maxCol = Math.max(
@@ -171,6 +179,8 @@ export function solvePart1(input: string): number {
   );
 
   const game = new Game({ minCol, maxCol, maxRow, lines });
+
+  // console.log(game.print());
 
   let i = 0;
   while (!game.exit) {
@@ -183,5 +193,3 @@ export function solvePart1(input: string): number {
   // console.log(game.print());
   return game.board.flat().filter((it) => it === "o").length;
 }
-
-export { solvePart2 } from './solver2';
