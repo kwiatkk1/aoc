@@ -49,40 +49,42 @@ export function solvePart1(input: string): number {
   let currentCmd = 0;
   let current = data.map["AAA"];
 
-  while (current.name !== "ZZZ") {
-    const cmd = data.cmds[currentCmd];
-
-    if (cmd === "R") {
-      current = current.right;
-    } else {
-      current = current.left;
-    }
-
+  while (current && current.name !== "ZZZ") {
+    current = data.cmds[currentCmd] === "R" ? current.right : current.left;
     steps += 1;
     currentCmd = (currentCmd + 1) % data.cmds.length;
   }
 
   return steps;
 }
+
+const gcd = (a: number, b: number) => {
+  while (b !== 0) {
+    [a, b] = [b, a % b];
+  }
+  return a;
+};
+
+const lcm = (a: number, b: number) => (a * b) / gcd(a, b);
+
 export function solvePart2(input: string): number {
   const data = parse(input);
+  const starts = data.nodes.filter((node) => node.name.endsWith("A")) as Node[];
 
-  let steps = 0;
-  let currentCmd = 0;
-  let currents = data.nodes.filter((node) => node.name.endsWith("A"));
-  let allDone = false;
+  // detect cycles
+  const cycles = starts.map((startNode) => {
+    let step = 0;
+    let cmdIndex = 0;
+    let current = startNode;
 
-  while (!allDone) {
-    const cmd = data.cmds[currentCmd];
+    while (!current.name.endsWith("Z")) {
+      current = data.cmds[cmdIndex] === "L" ? current.left : current.right;
+      cmdIndex = (cmdIndex + 1) % data.cmds.length;
+      step += 1;
+    }
 
-    currents = currents.map((current) => {
-      return cmd === "R" ? current.right : current.left;
-    }) as Node[];
+    return step;
+  });
 
-    allDone = currents.every((it) => it.name.endsWith("Z"));
-    steps += 1;
-    currentCmd = (currentCmd + 1) % data.cmds.length;
-  }
-
-  return steps;
+  return cycles.reduce(lcm, 1);
 }
