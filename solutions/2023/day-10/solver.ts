@@ -2,136 +2,191 @@ type Node = {
   row: number;
   col: number;
   value: string;
+  connectsE?: boolean;
+  connectsW?: boolean;
+  connectsN?: boolean;
+  connectsS?: boolean;
   connections: Node[];
   isWall?: boolean;
+  isExtended?: boolean;
+};
+
+const symbols: Record<string, Partial<Node>> = {
+  ".": { value: "·" },
+  "|": { value: "┃", connectsN: true, connectsS: true },
+  "-": { value: "━", connectsE: true, connectsW: true },
+  L: { value: "┗", connectsN: true, connectsE: true },
+  J: { value: "┛", connectsN: true, connectsW: true },
+  "7": { value: "┓", connectsS: true, connectsW: true },
+  F: { value: "┏", connectsS: true, connectsE: true },
 };
 
 function parse(input: string): Node[][] {
-  const cells = input.split("\n").map((row, rowIndex) => {
-    return row.split("").map((value, colIndex): Node => {
-      return {
+  const rows = input.split("\n").map((rowString, rowIndex) =>
+    rowString.split("").map(
+      (value, colIndex): Node => ({
         row: rowIndex,
         col: colIndex,
         value,
         connections: [],
         isWall: value === "S",
-      };
-    });
-  });
+      })
+    )
+  );
 
-  cells.forEach((row, rowIndex) => {
+  rows.forEach((row, rowIndex) => {
     row.forEach((cell, colIndex) => {
       const { value } = cell;
-      if (value === ".") return;
-      const connections = [];
+      Object.assign(cell, symbols[value]);
 
-      if (value === "|") {
-        const north = cells[rowIndex - 1]?.[colIndex];
-        const south = cells[rowIndex + 1]?.[colIndex];
-        cell.value = "┃";
-        if (north) connections.push(north);
-        if (south) connections.push(south);
-      }
+      const cellN = rows[rowIndex - 1]?.[colIndex];
+      const cellS = rows[rowIndex + 1]?.[colIndex];
+      const cellE = row[colIndex + 1];
+      const cellW = row[colIndex - 1];
 
-      if (value === "-") {
-        const east = cells[rowIndex]?.[colIndex + 1];
-        const west = cells[rowIndex]?.[colIndex - 1];
-        cell.value = "━";
-        if (east) connections.push(east);
-        if (west) connections.push(west);
-      }
-
-      if (value === "L") {
-        const north = cells[rowIndex - 1]?.[colIndex];
-        const east = cells[rowIndex]?.[colIndex + 1];
-        cell.value = "┗";
-        if (north) connections.push(north);
-        if (east) connections.push(east);
-      }
-
-      if (value === "J") {
-        const north = cells[rowIndex - 1]?.[colIndex];
-        const west = cells[rowIndex]?.[colIndex - 1];
-        cell.value = "┛";
-        if (north) connections.push(north);
-        if (west) connections.push(west);
-      }
-
-      if (value === "7") {
-        const south = cells[rowIndex + 1]?.[colIndex];
-        const west = cells[rowIndex]?.[colIndex - 1];
-        cell.value = "┓";
-        if (south) connections.push(south);
-        if (west) connections.push(west);
-      }
-
-      if (value === "F") {
-        const south = cells[rowIndex + 1]?.[colIndex];
-        const east = cells[rowIndex]?.[colIndex + 1];
-        cell.value = "┏";
-        if (south) connections.push(south);
-        if (east) connections.push(east);
-      }
-
-      cell.connections = connections;
+      if (cell.connectsN && cellN) cell.connections.push(cellN);
+      if (cell.connectsS && cellS) cell.connections.push(cellS);
+      if (cell.connectsE && cellE) cell.connections.push(cellE);
+      if (cell.connectsW && cellW) cell.connections.push(cellW);
     });
   });
 
-  return cells;
+  return rows;
 }
 
-function print(cells: Node[][]) {
-  console.log(
-    cells
-      .map((row) => {
-        return row.map((cell) => cell.value).join("");
-      })
-      .join("\n")
-  );
+function getNewCell(isWall = false): Node {
+  return {
+    row: 0,
+    col: 0,
+    value: isWall ? "x" : " ",
+    connections: [],
+    isExtended: true,
+    isWall: isWall,
+  };
 }
 
-export function solvePart1(input: string): number {
-  const data = parse(input);
+function debugPrint(cells: Node[][]) {
+  const output = cells
+    .map((row) => row.map(({ value }) => value).join(""))
+    .join("\n");
+  console.log(output);
+}
+
+function markWall(data: Node[][]) {
   const cells = data.flat();
   const start = cells.find((cell) => cell.value === "S")!;
+  const [toVisit] = cells.filter((cell) => cell.connections.includes(start));
+  let [prev, current] = [start, toVisit];
 
-  const toVisit = cells.filter((cell) => cell.connections.includes(start));
-
-  let prev = start;
-  let current = toVisit[0];
-  let steps = 1;
-  while (current !== start) {
-    const next = current.connections.find((cell) => cell !== prev)!;
-    prev = current;
-    current = next;
-    steps += 1;
-  }
-
-  return steps / 2;
-}
-export function solvePart2(input: string): number {
-  const data = parse(input);
-  const cells = data.flat();
-  const start = cells.find((cell) => cell.value === "S")!;
-
-  const toVisit = cells.filter((cell) => cell.connections.includes(start));
-
-  let prev = start;
-  let current = toVisit[0];
   while (current !== start) {
     current.isWall = true;
     const next = current.connections.find((cell) => cell !== prev)!;
-    prev = current;
-    current = next;
+    [prev, current] = [current, next];
   }
+}
 
-  cells.forEach((cell) => {
+function clearNotWall(data: Node[][]) {
+  data.flat().forEach((cell) => {
     if (!cell.isWall) {
-      cell.value = ".";
+      cell.value = "·";
+      cell.connections = [];
     }
   });
 
-  print(data);
+  return data;
+}
 
-  return 0;
+function zoomMapIn(data: Node[][]): Node[][] {
+  // adds extra column to the right of each cell
+  let rows = data.map((row, rowIndex) => {
+    return row.flatMap((cell, colIndex) => {
+      const nextCell = row[colIndex + 1];
+      const isExtraWall =
+        (cell.isWall && cell.connectsE) ||
+        (nextCell?.isWall && nextCell?.connectsW);
+
+      return [cell, getNewCell(isExtraWall)];
+    });
+  });
+
+  // adds extra row below each cell
+  rows = rows.flatMap((row, rowIndex, rows) => {
+    const extraRow = row.map<Node>((cell, col) => {
+      const nextCell = rows[rowIndex + 1]?.[col];
+      const isExtraWall =
+        (cell.isWall && cell.connectsS) ||
+        (nextCell?.isWall && nextCell?.connectsN);
+
+      return getNewCell(isExtraWall);
+    });
+
+    return [row, extraRow];
+  });
+
+  // adds extra column at start and end of each row
+  rows = rows.map((row, rowIndex) => [getNewCell(), ...row, getNewCell()]);
+
+  // adds extra row at start and end of the map
+  rows = [
+    rows[0].map(() => getNewCell()),
+    ...rows,
+    rows[0].map(() => getNewCell()),
+  ];
+
+  // update coordinates
+  rows.forEach((row, rowIndex) => {
+    row.forEach((cell, colIndex) => {
+      cell.row = rowIndex;
+      cell.col = colIndex;
+    });
+  });
+
+  return rows;
+}
+
+export function solvePart1(input: string): number {
+  const rows = parse(input);
+  markWall(rows);
+  const wallLength = rows.flat().filter((cell) => cell.isWall).length;
+
+  return wallLength / 2;
+}
+
+export function solvePart2(input: string): number {
+  const data = parse(input);
+
+  markWall(data);
+  clearNotWall(data);
+
+  const extended = zoomMapIn(data);
+
+  // debugPrint(extended);
+
+  let extendedCells = extended.flat();
+  let toVisit = [extended[0][0]];
+  let visited = new Set<Node>();
+
+  while (toVisit.length) {
+    const current = toVisit.shift()!;
+
+    if (visited.has(current)) continue;
+    visited.add(current);
+
+    const { row, col } = current;
+    const toN = extended[row - 1]?.[col];
+    const toS = extended[row + 1]?.[col];
+    const toE = extended[row]?.[col + 1];
+    const toW = extended[row]?.[col - 1];
+
+    if (toN && !toN.isWall && !visited.has(toN)) toVisit.push(toN);
+    if (toS && !toS.isWall && !visited.has(toS)) toVisit.push(toS);
+    if (toE && !toE.isWall && !visited.has(toE)) toVisit.push(toE);
+    if (toW && !toW.isWall && !visited.has(toW)) toVisit.push(toW);
+  }
+
+  const notVisited = extendedCells.filter(
+    (cell) => !cell.isWall && !cell.isExtended && !visited.has(cell)
+  );
+
+  return notVisited.length;
 }

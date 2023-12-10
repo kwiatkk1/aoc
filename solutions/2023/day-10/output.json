@@ -1,17 +1,26 @@
 {
   "test1": {
-    "part1": 4
+    "part1": 4,
+    "part2": 1
   },
   "test2": {
-    "part1": 8
+    "part1": 8,
+    "part2": 1
   },
   "test3": {
+    "part1": 22,
     "part2": 4
   },
   "test4": {
+    "part1": 70,
+    "part2": 8
+  },
+  "test5": {
+    "part1": 80,
     "part2": 10
   },
   "real": {
-    "part1": 6690
+    "part1": 6690,
+    "part2": 525
   }
 }
