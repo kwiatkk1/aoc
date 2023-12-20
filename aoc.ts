@@ -9,6 +9,7 @@ const { values: args } = parseArgs({
     day: { type: "string" },
     part: { type: "string", multiple: true, default: ["1", "2"] },
     test: { type: "boolean" },
+    noTest: { type: "boolean" },
     save: { type: "boolean" },
   },
 });
@@ -17,6 +18,7 @@ const year = args.year || getLastYear() || "";
 const day = (args.day || getLastDay() || "").padStart(2, "0");
 const parts = Array.isArray(args.part) ? args.part : ["1", "2"];
 const testsOnly = !!args.test;
+const noTests = !!args.noTest;
 const saveOutput = !!args.save;
 const solutionPath = `solutions/${year}/day-${day}`;
 
@@ -44,7 +46,11 @@ async function run(year: string, day: string, path: string) {
   const realFiles = files.filter(
     (it) => it.startsWith("input-real") && it.endsWith(".txt")
   );
-  const filesToRun = testsOnly ? testFiles : [...testFiles, ...realFiles];
+  const filesToRun = testsOnly
+    ? testFiles
+    : noTests
+    ? realFiles
+    : [...testFiles, ...realFiles];
   const results: any = {};
 
   for (let part of parts) {

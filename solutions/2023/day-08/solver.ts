@@ -1,4 +1,5 @@
 import { keyBy } from "lodash";
+import { lcmOf } from "../../../utils/lcm";
 
 type Cmd = "R" | "L";
 
@@ -58,15 +59,6 @@ export function solvePart1(input: string): number {
   return steps;
 }
 
-const gcd = (a: number, b: number) => {
-  while (b !== 0) {
-    [a, b] = [b, a % b];
-  }
-  return a;
-};
-
-const lcm = (a: number, b: number) => (a * b) / gcd(a, b);
-
 export function solvePart2(input: string): number {
   const data = parse(input);
   const starts = data.nodes.filter((node) => node.name.endsWith("A")) as Node[];
@@ -86,5 +78,5 @@ export function solvePart2(input: string): number {
     return step;
   });
 
-  return cycles.reduce(lcm, 1);
+  return lcmOf(cycles);
 }
