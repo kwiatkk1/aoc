@@ -31,7 +31,10 @@ function parse(input: string): Node[] {
     node.neighbors = neighbors.filter((n) => n && n.type !== "#");
   });
 
-  return nodes.flat().filter((n) => n.type !== "#");
+  return nodes
+    .flat()
+    .filter((n) => n.type !== "#")
+    .filter((n) => n.neighbors.length > 0);
 }
 
 export function solvePart1(input: string): number {
@@ -64,7 +67,30 @@ export function solvePart1(input: string): number {
 export function solvePart2(input: string): number {
   const nodes = parse(input);
   let round = 0;
-  const maxRound = 26501365;
+  let maxRound = nodes.length < 1e4 ? 6 : 64;
 
-  return 1;
+  const start = nodes.find((node) => node.type === "S")!;
+  start.activated = true;
+  start.odd = true;
+
+  while (nodes.some((n) => !n.activated)) {
+    round++;
+    const previouslyVisited = nodes.filter((n) => n.activated);
+
+    previouslyVisited.forEach((node) => {
+      node.neighbors
+        .filter((n) => n.type !== "#" && !n.activated)
+        .forEach((n) => {
+          n.activated = true;
+          n.odd = !node.odd;
+        });
+    });
+  }
+
+  console.log("all activated after", round, "rounds");
+
+  const isRoundOdd = round % 2 === 1;
+
+  return nodes.filter((n) => n.activated && (isRoundOdd ? n.odd : !n.odd))
+    .length;
 }
