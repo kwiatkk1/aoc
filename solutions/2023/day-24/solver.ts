@@ -10,14 +10,6 @@ type Point = {
   z: number;
 };
 
-function positionAt(hail: Hail, t: number): Point {
-  return {
-    x: hail.position.x + t * hail.velocity.x,
-    y: hail.position.y + t * hail.velocity.y,
-    z: hail.position.z + t * hail.velocity.z,
-  };
-}
-
 function getCollidingWithinArea(
   hails: Hail[],
   area: { min: number; max: number }
@@ -66,6 +58,42 @@ function areCollidingWithin(
   return isWithinArea && isInFuture;
 }
 
+function getIntersectionPoint(line1: Hail, line2: Hail): Point | null {
+  const { position: p1, velocity: v1 } = line1;
+  const { position: p2, velocity: v2 } = line2;
+  const v1_cross_v2 = crossProduct(v1, v2);
+  const p2_minus_p1 = { x: p2.x - p1.x, y: p2.y - p1.y, z: p2.z - p1.z };
+
+  // Check if the lines are parallel
+  if (magnitude(v1_cross_v2) === 0) {
+    return null;
+  }
+
+  const t =
+    dotProduct(crossProduct(p2_minus_p1, v2), v1_cross_v2) /
+    Math.pow(magnitude(v1_cross_v2), 2);
+
+  if (t < 0) return null;
+
+  return { x: p1.x + t * v1.x, y: p1.y + t * v1.y, z: p1.z + t * v1.z };
+}
+
+function crossProduct(v1: Point, v2: Point) {
+  return {
+    x: v1.y * v2.z - v1.z * v2.y,
+    y: v1.z * v2.x - v1.x * v2.z,
+    z: v1.x * v2.y - v1.y * v2.x,
+  };
+}
+
+function dotProduct(v1: Point, v2: Point) {
+  return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+}
+
+function magnitude(v: Point) {
+  return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+}
+
 function parse(input: string) {
   return input.split("\n").map<Hail>((it) => {
     const parts = it.split(" @ ");
@@ -83,25 +111,6 @@ function parse(input: string) {
   });
 }
 
-function getLineFormula(p1: Point, p2: Point, t1: number, t2: number) {
-  const dt = t2 - t1;
-  const l = (p2.x - p1.x) / dt;
-  const m = (p2.y - p1.y) / dt;
-  const n = (p2.z - p1.z) / dt;
-
-  return (t: number): Point => {
-    return {
-      x: p1.x + (t - t1) * l,
-      y: p1.y + (t - t1) * m,
-      z: p1.z + (t - t1) * n,
-    };
-  };
-}
-
-function equals(p1: Point, p2: Point) {
-  return p1.x === p2.x && p1.y === p2.y && p1.z === p2.z;
-}
-
 export function solvePart1(input: string): number {
   const hails = parse(input);
   const area =
@@ -110,43 +119,55 @@ export function solvePart1(input: string): number {
       : { min: 7, max: 27 };
   return getCollidingWithinArea(hails, area);
 }
+
 export function solvePart2(input: string): number {
-  const hails = parse(input);
-  let round = 0;
-  const positions: Point[][] = [];
+  const hails = parse(input).slice(0, 3);
+  let progressOutput = false;
 
-  while (true) {
-    positions.push(hails.map((h) => positionAt(h, round)));
+  for (let maxRadius = 2; ; maxRadius *= 2) {
+    let i = 0;
+    let all = Math.pow(2 * maxRadius, 3);
+    for (let x = -maxRadius; x < maxRadius; x++) {
+      for (let y = -maxRadius; y < maxRadius; y++) {
+        for (let z = -maxRadius; z < maxRadius; z++) {
+          if (++i % 1e6 === 0) {
+            if (progressOutput) process.stdout.moveCursor(0, -1);
+            process.stdout.clearLine(1);
+            process.stdout.write(
+              `radius: ${maxRadius} / ${((i / all) * 100).toFixed(2)}%\n`
+            );
+            progressOutput = true;
+          }
+          const rockVelocity = { x, y, z };
+          const [hail1, hail2, ...rest] = hails.map((hail) => ({
+            ...hail,
+            velocity: {
+              x: hail.velocity.x - rockVelocity.x,
+              y: hail.velocity.y - rockVelocity.y,
+              z: hail.velocity.z - rockVelocity.z,
+            },
+          }));
+          const collidePoint = getIntersectionPoint(hail1, hail2);
 
-    for (let i1 = 0; i1 < hails.length; i1++) {
-      for (let i2 = 0; i2 < hails.length; i2++) {
-        if (i1 === i2) continue;
+          if (!collidePoint) continue;
 
-        for (let t1 = 0; t1 < positions.length; t1++) {
-          for (let t2 = 0; t2 < positions.length; t2++) {
-            const p1 = positions[t1][i1];
-            const p2 = positions[t2][i2];
+          const { x: cx, y: cy, z: cz } = collidePoint;
+          const match = rest.every((hail) => {
+            const a = (cx - hail.position.x) / hail.velocity.x;
+            const b = (cy - hail.position.y) / hail.velocity.y;
+            const c = (cz - hail.position.z) / hail.velocity.z;
+            return a == b && b == c;
+          });
 
-            const f = getLineFormula(p1, p2, t1, t2);
-
-            const allGood = hails.every((hail, i) => {
-              if (i === i1 || i === i2) return true;
-              const res = positions
-                .map((position) => position[i])
-                .some((p, t) => equals(f(t), p));
-
-              return res;
-            });
-
-            if (allGood) {
-              const res = f(0);
-              return res.x + res.y + res.z;
-            }
+          if (match) {
+            if (progressOutput) process.stdout.moveCursor(0, -1);
+            process.stdout.clearLine(1);
+            return cx + cy + cz;
           }
         }
       }
     }
-
-    round += 1;
   }
+
+  return 0;
 }
