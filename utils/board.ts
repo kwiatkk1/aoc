@@ -26,6 +26,14 @@ export class BoardNode<T> {
       L: null,
     };
   }
+
+  get neighbors(): BoardNode<T>[] {
+    return Object.values(this.links).flatMap(it => it ? [it] : []);
+  }
+
+  getNeighborsMatching(value: T): BoardNode<T>[] {
+    return this.neighbors.filter(it => it.value === value);
+  }
 }
 
 export class Board<T> {
@@ -63,6 +71,10 @@ export class Board<T> {
       .join("\n");
 
     console.log(map);
+  }
+
+  transform<U>(func: (board: Board<T>) => U) {
+    return func(this);
   }
 
   static from<T>(
