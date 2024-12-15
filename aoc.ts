@@ -2,6 +2,7 @@ import { parseArgs } from "node:util";
 import assert from "node:assert";
 import chalk from "chalk";
 import { readdirSync, readFileSync, existsSync, writeFileSync } from "fs";
+import {progressLogger} from "./utils/debug";
 
 const { values: args } = parseArgs({
   options: {
@@ -88,6 +89,8 @@ async function run(year: string, day: string, path: string) {
 
       const result = await solverCode[`solvePart${part}`](input);
       const resultText = `${result}`;
+
+      progressLogger.clear();
 
       if (expected !== null) {
         const isValid = expected === resultText;

@@ -1,3 +1,5 @@
+import { progressLogger } from "../../../utils/debug";
+
 type Tile = {
   x: number;
   y: number;
@@ -107,6 +109,7 @@ export function solvePart2(input: string): number {
 
     results.push(solvePart1(input, startL));
     results.push(solvePart1(input, startR));
+    progressLogger.print(`row ${row}/${maxRow}`);
   }
 
   for (let col = 0; col < maxCol; col++) {
@@ -115,6 +118,7 @@ export function solvePart2(input: string): number {
 
     results.push(solvePart1(input, startT));
     results.push(solvePart1(input, startB));
+    progressLogger.print(`col ${col}/${maxCol}`);
   }
 
   return Math.max(...results);

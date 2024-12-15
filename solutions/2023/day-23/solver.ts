@@ -1,3 +1,5 @@
+import { progressLogger } from "../../../utils/debug";
+
 type Node<T> = T & {
   isInit?: boolean;
   isExit?: boolean;
@@ -108,6 +110,8 @@ function getAllRoutes<T>(paths: Node<T>[]): T[][] {
   while (stack.length > 0) {
     const route = stack.pop()!;
     const cPath = route[route.length - 1];
+
+    progressLogger.print(`Found: ${routes.length} routes so far...`);
 
     if (cPath.isExit) {
       routes.push(route);

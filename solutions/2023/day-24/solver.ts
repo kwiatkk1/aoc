@@ -1,3 +1,5 @@
+import { getProgressLogger } from "../../../utils/debug";
+
 type Hail = {
   position: Point;
   velocity: Point;
@@ -122,7 +124,7 @@ export function solvePart1(input: string): number {
 
 export function solvePart2(input: string): number {
   const hails = parse(input).slice(0, 3);
-  let progressOutput = false;
+  const logger = getProgressLogger();
 
   for (let maxRadius = 2; ; maxRadius *= 2) {
     let i = 0;
@@ -130,14 +132,7 @@ export function solvePart2(input: string): number {
     for (let x = -maxRadius; x < maxRadius; x++) {
       for (let y = -maxRadius; y < maxRadius; y++) {
         for (let z = -maxRadius; z < maxRadius; z++) {
-          if (++i % 1e6 === 0) {
-            if (progressOutput) process.stdout.moveCursor(0, -1);
-            process.stdout.clearLine(1);
-            process.stdout.write(
-              `radius: ${maxRadius} / ${((i / all) * 100).toFixed(2)}%\n`
-            );
-            progressOutput = true;
-          }
+          logger.print(`radius: ${maxRadius} / ${((++i / all) * 100).toFixed(2)}%`);
           const rockVelocity = { x, y, z };
           const [hail1, hail2, ...rest] = hails.map((hail) => ({
             ...hail,
@@ -160,8 +155,7 @@ export function solvePart2(input: string): number {
           });
 
           if (match) {
-            if (progressOutput) process.stdout.moveCursor(0, -1);
-            process.stdout.clearLine(1);
+            logger.clear();
             return cx + cy + cz;
           }
         }

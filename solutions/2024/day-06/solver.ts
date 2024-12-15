@@ -1,4 +1,5 @@
 import { Board, BoardNode, Direction, turnRight } from "../../../utils/board";
+import { progressLogger } from "../../../utils/debug";
 
 type Square = {
   isGuardsStart: boolean;
@@ -66,10 +67,11 @@ export function solvePart2(input: string): number {
 
   return visited
     .filter(({ value }) => !value.isGuardsStart)
-    .map(({ row, col }): number => {
+    .map(({ row, col }, i, all): number => {
       const cleanBoard = parse(input);
       const obstruction = cleanBoard.get(row, col);
       obstruction.value.isObstruction = true;
+      progressLogger.print(`removing obstruction ${i + 1}/${all.length}`);
       return walk(cleanBoard).isLoop ? 1 : 0;
     })
     .reduce(sum);
