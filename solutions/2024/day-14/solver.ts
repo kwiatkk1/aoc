@@ -37,6 +37,92 @@ function getPositionAfter(robot: Robot, round: number): Position {
   return { x, y };
 }
 
+function isEveryRobotOnOwnPosition(robots: Robot[], round: number): boolean {
+  const positions: Position[] = [];
+  const unique = new Set<string>();
+
+  for (let i = 0; i < robots.length; i++) {
+    const { x, y } = getPositionAfter(robots[i], round);
+    positions.push({ x, y });
+    unique.add(`${x},${y}`);
+    if (positions.length !== unique.size) return false;
+  }
+
+  return true;
+}
+
+function hasDiagonalLine(robots: Robot[], round: number): boolean {
+  const positions = robots.map((it) => getPositionAfter(it, round));
+  const diagonalSize = 5;
+
+  positions.sort((a, b) => a.x - b.x || a.y - b.y);
+
+  for (let i = 0; i < positions.length; i++) {
+    const followingPositions = positions.slice(i);
+    const followingDiagonals = followingPositions
+      .filter((it) => it.x - positions[i].x <= diagonalSize)
+      .filter((it) => it.x - positions[i].x === it.y - positions[i].y);
+
+    let found = true;
+    for (let j = 0; j < diagonalSize; j++) {
+      const hasFollowing =
+        followingDiagonals.filter(
+          (it) => it.x === positions[i].x + j && it.y === positions[i].y + j
+        ).length == 1;
+      if (!hasFollowing) {
+        found = false;
+        break;
+      }
+    }
+    if (found) return true;
+  }
+
+  return false;
+}
+
+function isTriangleFormed(robots: Robot[], round: number): boolean {
+  const positions = robots.map((it) => getPositionAfter(it, round));
+  const { w, h } = robots[0];
+  const diagonalSize = 5;
+
+  for (let row = 0; row < h - diagonalSize; row++) {
+    inner: for (let col = 0; col < w - diagonalSize; col++) {
+      const window = positions.filter(
+        (it) =>
+          it.x >= row &&
+          it.x < row + diagonalSize &&
+          it.y >= col &&
+          it.y < col + diagonalSize
+      );
+
+      for (let y = 0; y < diagonalSize; y++) {
+        for (let x = 0; x < diagonalSize; x++) {
+          const hasSomething = !!window.find(
+            (it) => it.x === x + row && it.y === y + col
+          );
+          const shouldHaveSomething = diagonalSize - y <= x;
+          if (hasSomething !== shouldHaveSomething) continue inner;
+        }
+      }
+
+      console.log("Found triangle at", row, col);
+      for (let y = 0; y < diagonalSize; y++) {
+        let line = "";
+        for (let x = 0; x < diagonalSize; x++) {
+          const hasSomething = positions.filter(
+            (it) => it.x === x + row && it.y === y + col
+          ).length;
+          line += hasSomething ? `${hasSomething}` : ".";
+        }
+        console.log(line);
+      }
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function solvePart1(input: string): number {
   const robots = parse(input);
   const rounds = 100;
@@ -67,24 +153,18 @@ export function solvePart2(input: string): number {
   const robots = parse(input);
 
   let round = 0;
-  let found: Position[] | null = null;
+  let found = false;
 
-  rounds: while (!found) {
-    const positions: Position[] = [];
-    const unique = new Set<string>();
+  while (!found) {
     round += 1;
 
-    for (let i = 0; i < robots.length; i++) {
-      const { x, y } = getPositionAfter(robots[i], round);
-      positions.push({ x, y });
-      unique.add(`${x},${y}`);
-      if (positions.length !== unique.size) continue rounds;
-    }
-
-    found = positions;
+    // found = hasDiagonalLine(robots, round);
+    // found = isTriangleFormed(robots, round);
+    found = isEveryRobotOnOwnPosition(robots, round);
   }
 
-  // found && print(found);
+  const positions = robots.map((it) => getPositionAfter(it, round));
+  print(positions);
 
   return round;
 }

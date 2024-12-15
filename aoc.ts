@@ -8,9 +8,11 @@ const { values: args } = parseArgs({
     year: { type: "string" },
     day: { type: "string" },
     part: { type: "string", multiple: true, default: ["1", "2"] },
-    test: { type: "boolean" },
+    test: { type: "boolean", negative: true },
+    file: { type: "string" },
     noTest: { type: "boolean" },
     save: { type: "boolean" },
+    debug: { type: "boolean", negative: true },
   },
 });
 
@@ -21,10 +23,13 @@ const testsOnly = !!args.test;
 const noTests = !!args.noTest;
 const saveOutput = !!args.save;
 const solutionPath = `solutions/${year}/day-${day}`;
+const debugMode = !!args.debug;
+
+process.env.DEBUG_AOC = debugMode ? "true" : "false";
 
 assert(existsSync(solutionPath), `no solutions for ${year}/${day}`);
 
-run(year, day, solutionPath);
+run(year, day, solutionPath).then(() => process.exit(0));
 
 function getLastDay() {
   const lastDayDir = readdirSync(`solutions/${year}`).pop();
@@ -40,17 +45,18 @@ async function run(year: string, day: string, path: string) {
   const expectedOutputs = await import(`./${path}/output.json`).catch(() => {});
   const files = readdirSync(path);
 
-  const testFiles = files.filter(
-    (it) => it.startsWith("input-test") && it.endsWith(".txt")
-  );
-  const realFiles = files.filter(
-    (it) => it.startsWith("input-real") && it.endsWith(".txt")
-  );
+  const testFiles = files
+    .filter((it) => it.startsWith("input-test") && it.endsWith(".txt"))
+    .filter((it) => (args.file ? it.includes(args.file) : true));
+  const realFiles = files
+    .filter((it) => it.startsWith("input-real") && it.endsWith(".txt"))
+    .filter((it) => (args.file ? it.includes(args.file) : true));
   const filesToRun = testsOnly
     ? testFiles
     : noTests
     ? realFiles
     : [...testFiles, ...realFiles];
+
   const results: any = {};
 
   for (let part of parts) {
@@ -80,7 +86,7 @@ async function run(year: string, day: string, path: string) {
         chalk.grey(`(${file})`)
       );
 
-      const result = solverCode[`solvePart${part}`](input);
+      const result = await solverCode[`solvePart${part}`](input);
       const resultText = `${result}`;
 
       if (expected !== null) {
