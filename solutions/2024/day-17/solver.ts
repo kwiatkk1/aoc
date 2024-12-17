@@ -1,5 +1,3 @@
-import {progressLogger} from "../../../utils/debug";
-
 type Registers = "A" | "B" | "C";
 
 class Comp {
@@ -9,12 +7,13 @@ class Comp {
     B: 0,
     C: 0,
   };
-  commands: number[] = [];
+  inputs: number[] = [];
   output: number[] = [];
+  commands = ["adv", "bxl", "bst", "jnz", "bxc", "out", "bdv", "cdv"] as const;
 
   constructor(registers: Record<Registers, number>, commands: number[]) {
     this.register = registers;
-    this.commands = commands;
+    this.inputs = commands;
   }
 
   reset(A: number, B: number, C: number) {
@@ -23,73 +22,17 @@ class Comp {
     this.output = [];
   }
 
-  printState() {
-    const { A, B, C } = this.register;
-    console.log("State", "A", A, "B", B, "C", C, "Pointer:", this.pointer);
-  }
-
   run() {
     while (this.runNext()) {}
   }
 
-  runToMatch() {
-    const expected = this.commands.join(",");
-
-    while (this.runNext()) {
-      if (!expected.startsWith(this.output.join(","))) {
-        return;
-      }
-    }
-  }
-
   runNext() {
-    const cmd = this.commands[this.pointer];
-    const op = this.commands[this.pointer + 1];
+    const cmdCode = this.inputs[this.pointer];
+    const op = this.inputs[this.pointer + 1];
     this.pointer += 2;
-
-    if (typeof op === "undefined") {
-      return false;
-    }
-
-    // console.log("Executing", `${cmd}, op: ${op}`);
-    // this.printState();
-
-    switch (cmd) {
-      case 0:
-        this.adv(op);
-        break;
-      case 1:
-        this.bxl(op);
-        break;
-      case 2:
-        this.bst(op);
-        break;
-      case 3:
-        this.jnz(op);
-        break;
-      case 4:
-        this.bxc();
-        break;
-      case 5:
-        this.out(op);
-        break;
-      case 6:
-        this.bdv(op);
-        break;
-      case 7:
-        this.cdv(op);
-        break;
-      default:
-        console.log(
-          "Invalid command",
-          `${cmd}, op: ${op}, pointer: ${this.pointer}`,
-          this.commands
-        );
-        process.exit(-1);
-    }
-
-    // console.log("After", `${JSON.stringify(this.register)}, pointer: ${this.pointer}`);
-
+    if (typeof op === "undefined") return false;
+    const command = this.commands[cmdCode];
+    if (command) this[command](op);
     return true;
   }
 
@@ -98,8 +41,7 @@ class Comp {
     if (combo === 4) return this.register.A;
     if (combo === 5) return this.register.B;
     if (combo === 6) return this.register.C;
-    console.log("Invalid combo");
-    return -1;
+    process.exit(1);
   }
 
   adv(combo: number) {
@@ -113,7 +55,7 @@ class Comp {
 
   bst(combo: number) {
     const value = this.getCombo(combo);
-    this.register.B = value % 8;
+    this.register.B = value & 7;
   }
 
   jnz(value: number) {
@@ -128,7 +70,7 @@ class Comp {
 
   out(combo: number) {
     const value = this.getCombo(combo);
-    this.output.push(value % 8);
+    this.output.push(value & 7);
   }
 
   bdv(combo: number) {
@@ -163,21 +105,49 @@ export function solvePart1(input: string) {
 
 export function solvePart2(input: string): number {
   const computer = parse(input);
-  const start = 1_000_000_000;
-  const end = 100_000_000_000;
+  const end = parseInt("7777777777777777", 8);
+  let start = 0;
 
-  let initial = start;
+  const cn = computer.inputs.length;
+  const prefixes: Set<string>[] = computer.inputs.map(() => new Set<string>());
 
-  while (initial < end) {
-    computer.reset(initial, 0, 0);
-    computer.runToMatch();
+  while (start < end) {
+    computer.reset(start, 0, 0);
+    computer.run();
 
-    progressLogger.print(`${initial} ${((initial - start) / (end - start) * 100).toFixed(2)}%`);
+    const n = computer.output.length;
 
-    if (computer.output.join(",") === computer.commands.join(",")) {
-      return initial;
+    if (cn < n) {
+      return -1;
     }
-    initial += 1;
+
+    for (let i = 0; i < n; i++) {
+      if (computer.output[n - i - 1] === computer.inputs[cn - i - 1]) {
+        prefixes[i].add(start.toString(8).substring(0, i + 1));
+      }
+    }
+
+    if (computer.output.join(",") === computer.inputs.join(",")) {
+      return start;
+    }
+
+    const startLength = start.toString(8).length;
+    const prefixesToCheck = prefixes.slice(0, startLength - 1);
+    const effective = [...(prefixesToCheck[prefixesToCheck.length - 1] || [])];
+
+    if (
+      !effective.length ||
+      effective.some((prefix) => start.toString(8).startsWith(prefix))
+    ) {
+      start += 1;
+      continue;
+    }
+
+    while (!effective.some((prefix) => start.toString(8).startsWith(prefix))) {
+      const rangeStarts = effective.map((prefix) => `${prefix}0`).sort();
+      const nextStart = rangeStarts.find((range) => range >= start.toString(8));
+      start = nextStart ? parseInt(nextStart, 8) : parseInt(`${rangeStarts[0]}0`, 8);
+    }
   }
 
   return -1;
