@@ -17,7 +17,7 @@ function walk(data: Board<Square>): {
   let current = data.find(({ value }) => value.isGuardsStart)!;
   let path: BoardNode<Square>[] = [current];
   let direction: Direction = "U";
-  let next = current.links[direction];
+  let next = current.links[direction]?.node;
 
   while (next) {
     // we have a loop
@@ -28,14 +28,14 @@ function walk(data: Board<Square>): {
     // we hit a wall
     if (next.value.isObstruction) {
       direction = turnRight(direction);
-      next = current.links[direction];
+      next = current.links[direction]?.node;
       continue;
     }
 
     next.value.visited.push(direction);
     path.push(next);
 
-    [current, next] = [next, next.links[direction]];
+    [current, next] = [next, next.links[direction]?.node];
   }
 
   return { path, isLoop: false };

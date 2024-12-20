@@ -36,10 +36,10 @@ function getGroupStats(fences: Fence[]) {
 function getFences(regionNodes: BoardNode<Plant>[]): Fence[] {
   return regionNodes.reduce<Fence[]>(
     (fences, { row, col, value, links: { U, D, L, R } }) => {
-      if (!U || U.value !== value) fences.push({ row: row - 1, col, facing: "D" });
-      if (!D || D.value !== value) fences.push({ row: row + 1, col, facing: "U" });
-      if (!L || L.value !== value) fences.push({ row, col: col - 1, facing: "R" });
-      if (!R || R.value !== value) fences.push({ row, col: col + 1, facing: "L" });
+      if (!U || U.node.value !== value) fences.push({ row: row - 1, col, facing: "D" });
+      if (!D || D.node.value !== value) fences.push({ row: row + 1, col, facing: "U" });
+      if (!L || L.node.value !== value) fences.push({ row, col: col - 1, facing: "R" });
+      if (!R || R.node.value !== value) fences.push({ row, col: col + 1, facing: "L" });
       return fences;
     },
     []

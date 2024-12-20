@@ -1,18 +1,36 @@
+import Heap from "heap";
+
 export type Direction = "U" | "R" | "D" | "L";
 
 const clockwise = ["U", "R", "D", "L"] as const;
+
 export function turnRight(direction: Direction): Direction {
   const newDirectionIndex =
     (clockwise.indexOf(direction) + 1) % clockwise.length;
   return clockwise[newDirectionIndex];
 }
 
+export const directionVectors: Record<Direction, { col: number; row: number }> =
+  {
+    U: { col: 0, row: -1 },
+    R: { col: 1, row: 0 },
+    D: { col: 0, row: 1 },
+    L: { col: -1, row: 0 },
+  };
+
+type BoardNodeLink<T> = {
+  node: BoardNode<T>;
+  cost: number;
+};
+
 export class BoardNode<T> {
   row: number;
   col: number;
   char: string;
   value: T;
-  links: Record<Direction, BoardNode<T> | null>;
+  links: Record<Direction, BoardNodeLink<T> | null>;
+  predecessors: BoardNode<T>[];
+  distance: number;
 
   constructor(row: number, col: number, char: string, value: T) {
     this.row = row;
@@ -25,32 +43,44 @@ export class BoardNode<T> {
       D: null,
       L: null,
     };
+    this.distance = Infinity;
+    this.predecessors = [];
   }
 
   get neighbors(): BoardNode<T>[] {
-    return Object.values(this.links).flatMap(it => it ? [it] : []);
+    return this.neighborLinks.map((it) => it.node);
+  }
+
+  get neighborLinks(): BoardNodeLink<T>[] {
+    return Object.values(this.links).flatMap((it) => (it ? [it] : []));
   }
 
   getNeighborsMatching(value: T): BoardNode<T>[] {
-    return this.neighbors.filter(it => it.value === value);
+    return this.neighbors.filter((it) => it.value === value);
   }
 }
 
 export class Board<T> {
   nodesList: BoardNode<T>[];
-  nodes: BoardNode<T>[][];
+  nodesLayers: BoardNode<T>[][][];
   width: number;
   height: number;
 
   constructor(nodes: BoardNode<T>[][]) {
     this.nodesList = nodes.flat();
-    this.nodes = nodes;
+    this.nodesLayers = [nodes];
     this.height = nodes.length;
     this.width = nodes[0].length;
   }
 
-  get(row: number, col: number) {
-    return this.nodes[row]?.[col] || null;
+  addLayer(board: Board<T>) {
+    this.nodesLayers.push(...board.nodesLayers);
+    this.nodesList = [...this.nodesList, ...board.nodesList];
+    return this;
+  }
+
+  get(row: number, col: number, layer = 0): BoardNode<T> {
+    return this.nodesLayers[layer][row]?.[col] || null;
   }
 
   find(predicate: (node: BoardNode<T>) => boolean) {
@@ -65,8 +95,8 @@ export class Board<T> {
     return this.filter(predicate).length;
   }
 
-  print(valueMapper: (it: T) => string) {
-    const map = this.nodes
+  print(valueMapper: (it: T) => string, layer = 0) {
+    const map = this.nodesLayers[layer]
       .map((row) => row.map((node) => valueMapper(node.value)).join(""))
       .join("\n");
 
@@ -75,6 +105,35 @@ export class Board<T> {
 
   transform<U>(func: (board: Board<T>) => U) {
     return func(this);
+  }
+
+  walkFrom(start: BoardNode<T>, valid: (it: BoardNode<T>) => boolean) {
+    const blocksMinQueue = new Heap<BoardNode<T>>(
+      (a, b) => a.distance - b.distance
+    );
+
+    this.nodesList.forEach((block) => (block.distance = Infinity));
+    start.distance = 0;
+    start.predecessors = [];
+    blocksMinQueue.push(start);
+
+    while (!blocksMinQueue.empty()) {
+      const current = blocksMinQueue.pop()!;
+
+      current.neighborLinks
+        .filter((link) => valid(link.node))
+        .forEach(({ node, cost }) => {
+          const distanceViaCurrent = current.distance + cost;
+
+          if (node.distance > distanceViaCurrent) {
+            node.distance = distanceViaCurrent;
+            node.predecessors = [current];
+            blocksMinQueue.push(node);
+          } else if (node.distance === distanceViaCurrent) {
+            node.predecessors.push(current);
+          }
+        });
+    }
   }
 
   static from<T>(
@@ -102,10 +161,14 @@ export class Board<T> {
     for (let row = 0; row < height; row++) {
       for (let col = 0; col < width; col++) {
         const node = nodes[row][col];
-        node.links.U = nodes[row - 1]?.[col] || null;
-        node.links.D = nodes[row + 1]?.[col] || null;
-        node.links.L = nodes[row][col - 1] || null;
-        node.links.R = nodes[row][col + 1] || null;
+        Object.entries(directionVectors).forEach(
+          ([direction, { col: dx, row: dy }]) => {
+            const linkedNode = nodes[row + dy]?.[col + dx];
+            node.links[direction as Direction] = linkedNode
+              ? { node: linkedNode, cost: 1 }
+              : null;
+          }
+        );
       }
     }
 

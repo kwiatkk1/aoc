@@ -1,4 +1,4 @@
-import { Board, BoardNode } from "../../../utils/board";
+import { Board } from "../../../utils/board";
 import { progressLogger } from "../../../utils/debug";
 
 type Bit = { x: number; y: number };
@@ -6,66 +6,7 @@ type Cell = {
   isCorrupted: boolean;
   isStart: boolean;
   isEnd: boolean;
-  distance: number;
 };
-
-class Queue {
-  private queue: BoardNode<Cell>[] = [];
-
-  constructor(queue: BoardNode<Cell>[] = []) {
-    this.queue = [...queue];
-  }
-
-  upsert(block: BoardNode<Cell>) {
-    const { queue } = this;
-    const currentIndex = queue.indexOf(block);
-
-    if (currentIndex !== -1) queue.splice(currentIndex, 1);
-
-    const insertAt = queue.findIndex(
-      (it) => it.value.distance > block.value.distance
-    );
-
-    if (insertAt === -1) {
-      queue.push(block);
-    } else {
-      queue.splice(insertAt, 0, block);
-    }
-  }
-
-  dequeue(): BoardNode<Cell> {
-    const min = this.queue.shift();
-    if (!min) throw new Error("Queue is empty");
-    return min;
-  }
-
-  isEmpty() {
-    return this.queue.length === 0;
-  }
-}
-
-function walk(blocks: BoardNode<Cell>[], start: BoardNode<Cell>) {
-  const blocksMinQueue = new Queue(blocks);
-
-  blocks.forEach((block) => (block.value.distance = Infinity));
-  start.value.distance = 0;
-  blocksMinQueue.upsert(start);
-
-  while (!blocksMinQueue.isEmpty()) {
-    const current = blocksMinQueue.dequeue();
-
-    current.neighbors
-      .filter((it) => !it.value.isCorrupted)
-      .forEach((it) => {
-        const distanceViaCurrent = current.value.distance + 1;
-
-        if (it.value.distance > distanceViaCurrent) {
-          it.value.distance = distanceViaCurrent;
-          blocksMinQueue.upsert(it);
-        }
-      });
-  }
-}
 
 function parse(input: string) {
   const bytes: Bit[] = input.split("\n").map((line) => {
@@ -86,7 +27,6 @@ function parse(input: string) {
       isCorrupted: false,
       isStart: row === 0 && col === 0,
       isEnd: row === size - 1 && col === size - 1,
-      distance: Infinity,
     })
   );
 
@@ -105,9 +45,9 @@ export function solvePart1(input: string): number {
     board.get(byte.y, byte.x).value.isCorrupted = true;
   }
 
-  walk(board.nodesList, start);
+  board.walkFrom(start, (it) => !it.value.isCorrupted);
 
-  return end.value.distance;
+  return end.distance;
 }
 
 export function solvePart2(input: string): string {
@@ -121,9 +61,9 @@ export function solvePart2(input: string): string {
 
     progressLogger.print(`Processing ${i + 1}/${bytes.length}`);
 
-    walk(board.nodesList, start);
+    board.walkFrom(start, (it) => !it.value.isCorrupted);
 
-    if (end.value.distance === Infinity) {
+    if (end.distance === Infinity) {
       found = byte;
       break;
     }

@@ -67,7 +67,7 @@ function parse(input: string, { expand = false } = {}) {
 }
 
 function moveRobot(cmd: Direction, board: Board<Tile>) {
-  const nextNode = ({ links }: BoardNode<Tile>) => links[cmd]!;
+  const nextNode = ({ links }: BoardNode<Tile>) => links[cmd]!.node;
   const robotNode = board.find(({ value }) => value.hasRobot)!;
   const maybeNext = nextNode(robotNode);
 
@@ -83,8 +83,8 @@ function moveRobot(cmd: Direction, board: Board<Tile>) {
   const boxesToPush = new Set<BoardNode<Tile>>();
 
   if (hasBox(maybeNext)) boxesToPush.add(maybeNext);
-  if (maybeNext.value.hasBoxPartL) boxesToPush.add(maybeNext.links.R!);
-  if (maybeNext.value.hasBoxPartR) boxesToPush.add(maybeNext.links.L!);
+  if (maybeNext.value.hasBoxPartL) boxesToPush.add(maybeNext.links.R!.node);
+  if (maybeNext.value.hasBoxPartR) boxesToPush.add(maybeNext.links.L!.node);
 
   let oldSize = 0;
 
@@ -97,7 +97,7 @@ function moveRobot(cmd: Direction, board: Board<Tile>) {
       if (next.value.isWall) return;
       if (next.value.hasBoxPartL || next.value.hasBoxPartR) {
         boxesToPush.add(next);
-        boxesToPush.add(next.value.hasBoxPartL ? next.links.R! : next.links.L!);
+        boxesToPush.add(next.value.hasBoxPartL ? next.links.R!.node : next.links.L!.node);
       }
       if (next.value.hasBox) {
         boxesToPush.add(next);

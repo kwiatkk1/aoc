@@ -9,9 +9,11 @@
     "next": "ts-node prepare-next-day"
   },
   "dependencies": {
+    "@types/heap": "^0.2.34",
     "@types/lodash": "^4.14.191",
     "@types/node": "^18.11.11",
     "chalk": "^4.1.2",
+    "heap": "^0.2.7",
     "lodash": "^4.17.21",
     "prettier": "^2.8.0",
     "ts-node": "^10.9.1",

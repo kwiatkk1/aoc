@@ -48,6 +48,23 @@ class AocProgressLogger {
     this.lastCall = Date.now();
   }
 
+  printProgress(current: number, total: number) {
+    this.print(
+      [
+        "checking",
+        whiteBright(`${current}/${total}`),
+        white(`(${((current / total) * 100).toFixed(2)}%)`),
+      ].join(" ")
+    );
+  }
+
+  countTo(total: number) {
+    let current = 0;
+    return {
+      increment: () => this.printProgress(++current, total),
+    };
+  }
+
   clear() {
     if (this.linesAdded) process.stdout.moveCursor(0, -1 * this.linesAdded);
     process.stdout.clearScreenDown();

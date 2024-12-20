@@ -22,7 +22,7 @@ function getTrailsFrom(start: BoardNode<Hill>): BoardNode<Hill>[][] {
     }
 
     Object.values(node.links)
-      .flatMap((it) => (it ? [it] : []))
+      .flatMap((it) => (it ? [it.node] : []))
       .filter((it) => it.value === node.value + 1)
       .forEach((it) => queue.push({ path: [...path, it] }));
   }
