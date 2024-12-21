@@ -65,12 +65,17 @@ export class Board<T> {
   nodesLayers: BoardNode<T>[][][];
   width: number;
   height: number;
+  validator: (it: BoardNode<T>) => boolean;
 
-  constructor(nodes: BoardNode<T>[][]) {
+  constructor(
+    nodes: BoardNode<T>[][],
+    opts?: { validator?: (it: BoardNode<T>) => boolean }
+  ) {
     this.nodesList = nodes.flat();
     this.nodesLayers = [nodes];
     this.height = nodes.length;
     this.width = nodes[0].length;
+    this.validator = opts?.validator || (() => true);
   }
 
   addLayer(board: Board<T>) {
@@ -107,7 +112,7 @@ export class Board<T> {
     return func(this);
   }
 
-  walkFrom(start: BoardNode<T>, valid: (it: BoardNode<T>) => boolean) {
+  walkFrom(start: BoardNode<T>, valid?: (it: BoardNode<T>) => boolean) {
     const blocksMinQueue = new Heap<BoardNode<T>>(
       (a, b) => a.distance - b.distance
     );
@@ -121,7 +126,9 @@ export class Board<T> {
       const current = blocksMinQueue.pop()!;
 
       current.neighborLinks
-        .filter((link) => valid(link.node))
+        .filter((link) =>
+          valid ? valid(link.node) : this.validator(link.node)
+        )
         .forEach(({ node, cost }) => {
           const distanceViaCurrent = current.distance + cost;
 
@@ -136,9 +143,59 @@ export class Board<T> {
     }
   }
 
+  getAllPaths(start: BoardNode<T>, end: BoardNode<T>): BoardNode<T>[][] {
+    const paths = [];
+    const queue = [{ path: [start] }];
+
+    this.walkFrom(end);
+
+    while (queue.length > 0) {
+      const { path } = queue.shift()!;
+      const node = path[path.length - 1];
+
+      if (node === end) {
+        paths.push(path);
+      }
+
+      node.predecessors.forEach((it) => queue.push({ path: [...path, it] }));
+    }
+
+    return paths;
+  }
+
+  getAllDirections(start: BoardNode<T>, end: BoardNode<T>): Direction[][] {
+    const paths = this.getAllPaths(start, end);
+    return paths.map((path) => {
+      return path.reduce((directions, node, currentIndex): Direction[] => {
+        if (currentIndex === 0) return directions;
+        const previousNode = path[currentIndex - 1];
+
+        const direction =
+          previousNode.links.U?.node === node
+            ? "U"
+            : previousNode.links.D?.node === node
+            ? "D"
+            : previousNode.links.L?.node === node
+            ? "L"
+            : "R";
+
+        return [...directions, direction];
+      }, [] as Direction[]);
+    });
+  }
+
   static from<T>(
     input: string,
-    value: ({ char, row, col }: { char: string; row: number; col: number }) => T
+    value: ({
+      char,
+      row,
+      col,
+    }: {
+      char: string;
+      row: number;
+      col: number;
+    }) => T,
+    validator?: (it: BoardNode<T>) => boolean
   ): Board<T> {
     const lines = input.split("\n");
     const height = lines.length;
@@ -172,6 +229,6 @@ export class Board<T> {
       }
     }
 
-    return new Board(nodes);
+    return new Board(nodes, { validator });
   }
 }
