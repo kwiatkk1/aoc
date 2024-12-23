@@ -1,0 +1,10 @@
+{
+  "test": {
+    "part1": 7,
+    "part2": "co,de,ka,ta"
+  },
+  "real": {
+    "part1": 1151,
+    "part2": "ar,cd,hl,iw,jm,ku,qo,rz,vo,xe,xm,xv,ys"
+  }
+}
