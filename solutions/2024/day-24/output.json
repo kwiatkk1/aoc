@@ -1,11 +1,15 @@
 {
   "test": {
-    "part1": 4,
-    "part2": -1
+    "part1": 4
   },
   "test2": {
-    "part1": 2024,
-    "part2": -1
+    "part1": 2024
   },
-  "real": {}
+  "test3": {
+    "part2": "z00,z01,z02,z05"
+  },
+  "real": {
+    "part1": 53190357879014,
+    "part2": "bks,hnd,nrn,tdv,tjp,z09,z16,z23"
+  }
 }
